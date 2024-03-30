@@ -1,0 +1,5 @@
+*.iml
+.idea/
+__pycache__/
+/database/db.sqlite
+config.py
