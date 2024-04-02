@@ -57,6 +57,8 @@ class Assistant:
 
             choice = response.choices[0]
 
+            print(response.usage)
+
             # Is the response a function call?
             if choice.finish_reason == "tool_calls":
                 for tool_call in choice.message.tool_calls:
@@ -64,6 +66,7 @@ class Assistant:
                         query = json.loads(tool_call.function.arguments)["query"]
                         print('Executing query:', query)
                         query_results = self.database.execute_query(query)
+                        print('Query results:', query_results)
                         messages.append({"role": "system", "content": json.dumps(query_results)})
             else:
                 # Assume the response is an HTML message

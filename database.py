@@ -7,6 +7,7 @@ class SuccessQueryResult(TypedDict):
     success: Literal[True]
     rows: list
     rowcount: int
+    columns: list[str] | None
 
 
 class ErrorQueryResult(TypedDict):
@@ -50,14 +51,18 @@ class SQLiteDatabase:
 
         try:
             connection = sqlite3.connect(self.database_path)
-            cur = connection.cursor()
-            cur.execute(query)
-            rows = cur.fetchall()
-            rowcount = cur.rowcount
+            cursor = connection.cursor()
+            cursor.execute(query)
+            rows = cursor.fetchall()
+
+            # Compute the rowcount. For select queries, the rowcount is -1, so we need to compute it manually.
+            rowcount = cursor.rowcount if cursor.rowcount != -1 else len(rows)
+
+            columns = [description[0] for description in cursor.description] if cursor.description is not None else None
 
             connection.commit()
 
-            return {"success": True, "rows": rows, "rowcount": rowcount}
+            return {"success": True, "rows": rows, "rowcount": rowcount, "columns": columns}
         except sqlite3.Error as error:
             return {"success": False, "error": str(error)}
         finally:
