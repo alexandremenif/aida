@@ -46,7 +46,7 @@ class SQLiteDatabase:
         else:
             print("Database already exists.")
 
-    def execute_query(self, query: str) -> QueryResult:
+    def execute_query(self, query: str, commit: bool) -> QueryResult:
         connection = None
 
         try:
@@ -60,7 +60,8 @@ class SQLiteDatabase:
 
             columns = [description[0] for description in cursor.description] if cursor.description is not None else None
 
-            connection.commit()
+            if commit:
+                connection.commit()
 
             return {"success": True, "rows": rows, "rowcount": rowcount, "columns": columns}
         except sqlite3.Error as error:

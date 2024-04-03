@@ -45,6 +45,11 @@ class Assistant:
                                     "query": {
                                         "type": "string",
                                         "description": "An SQLite query to execute in the database."
+                                    },
+                                    "commit": {
+                                        "type": "boolean",
+                                        "description": "Whether to commit the transaction after executing the query.",
+                                        "default": True
                                     }
                                 },
                                 "required": ["query"]
@@ -63,9 +68,11 @@ class Assistant:
             if choice.finish_reason == "tool_calls":
                 for tool_call in choice.message.tool_calls:
                     if tool_call.function.name == "executeQuery":
-                        query = json.loads(tool_call.function.arguments)["query"]
-                        print('Executing query:', query)
-                        query_results = self.database.execute_query(query)
+                        params = json.loads(tool_call.function.arguments)
+                        query = params["query"]
+                        commit = params.get("commit", True)
+                        print('Executing query:', query, 'commit:', commit)
+                        query_results = self.database.execute_query(query, commit)
                         print('Query results:', query_results)
                         messages.append({"role": "system", "content": json.dumps(query_results)})
             else:
