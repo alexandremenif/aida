@@ -1,5 +1,6 @@
 import openai
 import json
+import os
 
 from database import SQLiteDatabase
 
@@ -29,6 +30,12 @@ class Assistant:
             {"role": "user", "content": content}
         ]
 
+        execution_context = {'html': ''}
+
+        # When generating HTML from python script, we can ask the model to retry up to 3 times in case of an error by
+        # providing the exception message as a response.
+        remaining_attempts = 10
+
         while True:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -50,9 +57,13 @@ class Assistant:
                                         "type": "boolean",
                                         "description": "Whether to commit the transaction after executing the query.",
                                         "default": True
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "description": "A valid python variable name to store the query results."
                                     }
                                 },
-                                "required": ["query"]
+                                "required": ["query", "name"]
                             }
                         }
                     }
@@ -73,7 +84,14 @@ class Assistant:
                         commit = params.get("commit", True)
                         print('Executing query:', query, 'commit:', commit)
                         query_results = self.database.execute_query(query, commit)
+
+                        if query_results['success']:
+                            name = params["name"]
+                            query_results['name'] = name
+                            execution_context[name] = query_results['rows']
+
                         print('Query results:', query_results)
+
                         messages.append({"role": "system", "content": json.dumps(query_results)})
             else:
                 # Assume the response is an HTML message
@@ -82,10 +100,28 @@ class Assistant:
                 if len(lines) > 1:
                     print('GPT is doing it again! It returned multiple lines.')
 
+                print('Response:', lines[0])
+
                 message = json.loads(lines[0])
 
                 if "html" in message:
                     print('Response:', message["html"])
                     return message["html"]
+                if "python" in message:
+
+                    # Try to execute the python code and get the HTML content.
+                    # If an exception occurs, send it as a response and retry.
+                    try:
+                        print('Executing python code:')
+                        exec(message["python"], execution_context)
+                        return execution_context['html']
+                    except Exception as e:
+                        print('Error executing python code:', e)
+                        remaining_attempts -= 1
+                        if remaining_attempts == 0:
+                            raise e
+                        else:
+                            content = "An error occurred while executing the python code, please fix it and try again: " + str(e)
+                            messages.append({"role": "system", "content": content})
                 else:
                     raise Exception(f"Unknown response: {response}")
