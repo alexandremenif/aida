@@ -1,11 +1,12 @@
-
--- Table creation for persons
 CREATE TABLE IF NOT EXISTS persons (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL
+  name TEXT NOT NULL,
+  tel TEXT,
+  email TEXT UNIQUE NOT NULL,
+  address TEXT,
+  photo TEXT
 );
 
--- Table creation for events
 CREATE TABLE IF NOT EXISTS events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
@@ -15,11 +16,19 @@ CREATE TABLE IF NOT EXISTS events (
   CHECK (start < end)
 );
 
--- Table creation for event_attendees
 CREATE TABLE IF NOT EXISTS event_attendees (
   event_id INTEGER NOT NULL,
   person_id INTEGER NOT NULL,
   PRIMARY KEY (event_id, person_id),
   FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
   FOREIGN KEY (person_id) REFERENCES persons(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS posts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  author_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  published DATETIME NOT NULL,
+  content TEXT NOT NULL, -- Storing HTML content
+  FOREIGN KEY (author_id) REFERENCES persons(id) ON DELETE CASCADE
 );
