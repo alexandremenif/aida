@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS posts (
   author_id INTEGER NOT NULL,
   title TEXT NOT NULL,
   published DATETIME NOT NULL,
+  summary TEXT NOT NULL,
   content TEXT NOT NULL, -- Storing HTML content
   FOREIGN KEY (author_id) REFERENCES persons(id) ON DELETE CASCADE
 );
