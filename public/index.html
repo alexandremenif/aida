@@ -4,19 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AIDA</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="main-area">
-    <!-- Container for dynamically loaded content -->
-    <div id="content-wrapper">
-        Welcome to AIDA! Type your request to get started.
+
+<main id="mainArea">
+    <p>Welcome to AIDA! Type your request to get started.</p>
+</main>
+
+<div class="ui basic modal">
+    <div class="content">
+        <div class="ui form">
+            <div class="field">
+                <textarea id="textInput"></textarea>
+            </div>
+            <button class="ui button" id="submitBtn">Submit</button>
+        </div>
     </div>
 </div>
-<div id="input-area">
-    <input type="text" id="input-text" placeholder="Type your request...">
-    <button id="send-btn">Send</button>
-</div>
+
+<button class="ui huge circular primary icon button" id="fabBtn" style="position: fixed; bottom: 20px; right: 20px;">
+    <i class="keyboard icon"></i>
+</button>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.js"></script>
 <script src="script.js"></script>
+
 </body>
 </html>

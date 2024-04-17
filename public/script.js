@@ -1,21 +1,45 @@
-document.getElementById('send-btn').addEventListener('click', function() {
-  const inputText = document.getElementById('input-text').value;
-  const contentWrapper = document.getElementById('content-wrapper');
-  contentWrapper.innerHTML = '<div class="spinner"></div>'; // Show spinner
+$(document).ready(function() {
+  const mainArea = $("#mainArea");
+  const modal = $('.ui.basic.modal');
+  const textInput = $("#textInput");
+  const fabBtn = $("#fabBtn");
+  const submitBtn = $("#submitBtn");
 
-  fetch('/query', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'text/plain',
-    },
-    body: inputText,
-  })
-    .then(response => response.text())
-    .then(htmlContent => {
-      contentWrapper.innerHTML = htmlContent; // Replace spinner with HTML content
-    })
-    .catch(error => {
-      contentWrapper.innerHTML = 'Error: ' + error; // Replace spinner with error message
-      console.error('Error:', error)
+  // Show modal on FAB click
+  fabBtn.click(function() {
+    modal.modal('show');
+  });
+
+  // Submit logic
+  function submitRequest() {
+    const userText = textInput.val();
+    modal.modal('hide');
+    mainArea.html('<div class="ui huge active centered inline loader"></div>');
+
+    $.ajax({
+      type: "POST",
+      url: "/query",
+      data: userText,
+      contentType: "text/plain",
+      success: function(response) {
+        mainArea.html(response);
+      },
+      error: function() {
+        mainArea.html('<p>Error processing your request. Please try again.</p>');
+      }
     });
+  }
+
+  // Handle submit button click
+  submitBtn.click(function() {
+    submitRequest();
+  });
+
+  // Handle enter key in text area
+  textInput.keypress(function(e) {
+    if (e.which === 13) {
+      e.preventDefault(); // Prevent default enter behavior
+      submitRequest();
+    }
+  });
 });
