@@ -31,30 +31,27 @@ class SQLiteDatabase:
             self.connection.close()
 
     def init(self):
-        cursor = None
-
         # Check if the database is an existing file
         if not os.path.exists(self.database_path):
             # Open a connection to a new database (this will create the file)
-            try:
-                self.connection = sqlite3.connect(self.database_path)
-                cursor = self.connection.cursor()
+            with sqlite3.connect(self.database_path) as connection:
+                with connection.cursor() as cursor:
+                    # Execute the DDL and DML scripts
+                    for script_path in [self.ddl_path, self.data_path]:
+                        with open(script_path, 'r') as script_file:
+                            cursor.executescript(script_file.read())
 
-                for script_path in [self.ddl_path, self.data_path]:
-                    with open(script_path, 'r') as script_file:
-                        cursor.executescript(script_file.read())
-
-                # Commit changes and close the connection
-                self.connection.commit()
-            finally:
-                if cursor is not None:
-                    cursor.close()
-            print("Database created and initialized from SQL script.")
+                    # Commit changes and close the connection
+                    connection.commit()
+                    print("Database created and initialized from SQL script.")
         else:
-            self.connection = sqlite3.connect(self.database_path)
             print("Database already exists.")
 
     def execute_query(self, query: str, commit: bool) -> QueryResult:
+        # Create a connection if it doesn't exist
+        if self.connection is None:
+            self.connection = sqlite3.connect(self.database_path)
+
         cursor = None
 
         try:
@@ -77,3 +74,13 @@ class SQLiteDatabase:
         finally:
             if cursor is not None:
                 cursor.close()
+
+            # If the transaction was committed, close the connection
+            if commit:
+                self.connection.close()
+                self.connection = None
+
+    # Return the content of the DDL script
+    def ddl(self):
+        with open(self.ddl_path, 'r') as ddl_file:
+            return ddl_file.read()
