@@ -1,8 +1,30 @@
-import openai
+from typing import Callable, Iterable
+
 import json
-import os
+
+from openai import OpenAI
 
 from database import SQLiteDatabase
+from conversation.messages import Message
+
+
+type Agent = Callable[[Iterable[Message]], Message]
+
+
+class OpenAIAgent(Agent):
+    def __init__(self, client: OpenAI, model: str, tools):
+        self.client = client
+        self.model = model
+        self.tools = tools
+
+    def __call__(self, messages: Iterable[Message]) -> Message:
+        response = self.client.chat.completions.create(
+            model=self.model,
+            response_format={"type": "json_object"},
+            tools=self.tools,
+            messages=messages
+        )
+        return response.choices[0].message
 
 
 class Assistant:
