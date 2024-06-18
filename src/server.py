@@ -1,15 +1,21 @@
 from functools import partial
 from http.server import HTTPServer, SimpleHTTPRequestHandler
+
+from langchain_openai import ChatOpenAI
+
 import config
 from assistant import Assistant
-from database import SQLiteDatabase
+from database import SQLiteDatabase, ConnectionPool
+from data_store import DataStore
+from agents import DatabaseQueryAgent, HTMLGeneratorAgent
+from tools import PythonREPLTool, ExecuteQueryTool
 
 
 class AppHTTPRequestHandler(SimpleHTTPRequestHandler):
 
     def __init__(self, assistant_: Assistant, *args, **kwargs):
         self.assistant = assistant_
-        super().__init__(*args, directory='public', **kwargs)
+        super().__init__(*args, directory='../public', **kwargs)
 
     def do_POST(self):
         if self.path == '/query':
@@ -34,13 +40,24 @@ class AppHTTPRequestHandler(SimpleHTTPRequestHandler):
 if __name__ == '__main__':
     port = 8000
     server_address = ('', port)
-    database_path = "database/db.sqlite"
-    ddl_path = "database/ddl.sql"
-    data_path = "database/data.sql"
+    database_path = "../database/db.sqlite"
+    ddl_path = "../database/ddl.sql"
+    data_path = "../database/data.sql"
     openai_api_key = config.OPENAI_API_KEY
     openai_model = config.OPENAI_MODEL
-    database = SQLiteDatabase(database_path, ddl_path, data_path)
-    assistant = Assistant(openai_api_key, openai_model, ddl_path, database)
+    connection_pool = ConnectionPool(
+        database_path,
+        config.DB_MAX_CONNECTIONS,
+        config.DB_MAX_IDLE_TIME
+    )
+    database = SQLiteDatabase(connection_pool, database_path, ddl_path, data_path)
+    data_store = DataStore()
+    python_repl_tool = PythonREPLTool(data_store)
+    execute_query_tool = ExecuteQueryTool(database, data_store)
+    model = ChatOpenAI(model=openai_model, api_key=openai_api_key)
+    database_query_agent = DatabaseQueryAgent(model, execute_query_tool)
+    html_generator_agent = HTMLGeneratorAgent(model, python_repl_tool)
+    assistant = Assistant(python_repl_tool, execute_query_tool, database_query_agent, html_generator_agent)
     handler = partial(AppHTTPRequestHandler, assistant)
     httpd = HTTPServer(server_address, handler)
 
